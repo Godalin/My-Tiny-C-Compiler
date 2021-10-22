@@ -36,7 +36,7 @@ pDigitLetter = pDigit <|> pLetter
 
 -- * parse a single punctuation
 pPunctuation :: PSource Char
-pPunctuation = pChar <=> isPunctuation
+pPunctuation = pChar <=> (`elem` "+-=*/%|&!><")
 
 -- * parse series of punctuation
 pPunctuations :: PSource String
