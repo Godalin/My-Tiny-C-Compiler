@@ -1,5 +1,4 @@
-module Main where
-
+import           Grammar.Lexical.Lexical (genTokenStream)
 
 main :: IO ()
-main = putStrLn "aaa"
+main = undefined

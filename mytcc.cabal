@@ -25,6 +25,10 @@ source-repository head
 
 library
   exposed-modules:
+      Grammar.Lexical.Basic
+      Grammar.Lexical.Lexical
+      Grammar.Syntax.Basic
+      Grammar.Syntax.Syntax
       Parser.Basic
       Parser.Conbinators
       Parser.Parsers
