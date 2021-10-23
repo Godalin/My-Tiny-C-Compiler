@@ -1,4 +1,3 @@
-import           Control.Monad
 import           Grammar.Lexical.Lexical (genTokenStream)
 import           Test.Hspec
 

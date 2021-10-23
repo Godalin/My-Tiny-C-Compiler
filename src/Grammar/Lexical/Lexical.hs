@@ -1,13 +1,12 @@
 module Grammar.Lexical.Lexical
     ( genTokenStream
-    )where
+    ) where
 
 import           Grammar.Lexical.Basic
 import           Parser.Basic
 import           Parser.Conbinators
 import           Parser.Parsers
 
-type TParser = PSource Token
 
 genTokenStream :: String -> [Token]
 genTokenStream source = case pTokenStream source of
@@ -32,14 +31,15 @@ pIdentifier = mRmSpace (pLetter <+> cIter pDigitLetter
 
 pIntConstant :: TParser
 pIntConstant = mRmSpace pDigits
-                >>> (\x -> read x :: Int)
                 >>> TIntConstant
 
 pStringConstant :: TParser
-pStringConstant = mRmSpace (pLiteral '"'
-                <-+> cIter (pLiteral '\\' <-+> pChar
-                    <|> pChar <=> (/= '"'))
-                <+-> pLiteral '"')
+pStringConstant = mRmSpace (cEncloseEx
+                (pLiteral '"')
+                (pLiteral '"')
+                (cIter (
+                    pLiteral '\\' <-+> (pChar >>> escape)
+                    <|> pChar <=> (/= '"'))))
                 >>> TStringConstant
 
 escape :: Char -> Char
@@ -84,4 +84,4 @@ pOperator = mRmSpace pPunctuations +> transform where
     transform _    = const Nothing
 
 pSinglePunc :: TParser
-pSinglePunc = mRmSpace pChar >>> TSinglePunc
+pSinglePunc = mRmSpace pChar >>> TSingleMark

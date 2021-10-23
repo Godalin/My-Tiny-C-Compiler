@@ -7,8 +7,7 @@ import           Parser.Conbinators
 
 -- * parse a single character
 pChar :: PSource Char
-pChar ""     = Nothing
-pChar (c:cs) = Just (c, cs)
+pChar = bParser
 
 -- * parse a specific character
 pLiteral :: Char -> PSource Char

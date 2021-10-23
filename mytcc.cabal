@@ -27,7 +27,9 @@ library
   exposed-modules:
       Grammar.Lexical.Basic
       Grammar.Lexical.Lexical
+      Grammar.Lexical.Printer
       Grammar.Syntax.Basic
+      Grammar.Syntax.Expression
       Grammar.Syntax.Syntax
       Parser.Basic
       Parser.Conbinators

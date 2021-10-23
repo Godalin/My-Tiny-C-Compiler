@@ -59,3 +59,10 @@ cIterSafe :: Parser s a -> Parser s [a]
 cIterSafe parserA input = case cIter parserA input of
     Just ([], _) -> Nothing
     result       -> result
+
+cEncloseEx :: Parser s a -> Parser s a -> Parser s b -> Parser s b
+cEncloseEx parserL parserR parserM =
+    parserL <-+> parserM <+-> parserR
+
+cEndEx :: Parser s a -> Parser s b -> Parser s b
+cEndEx parserA = (<+-> parserA)
