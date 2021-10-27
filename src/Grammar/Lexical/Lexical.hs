@@ -72,6 +72,7 @@ pOperator = mRmSpace pPunctuations +> transform where
     transform "-"  = cJust TSub
     transform "*"  = cJust TMul
     transform "/"  = cJust TDiv
+    transform "%"  = cJust TMod
     transform "==" = cJust TEq
     transform "!=" = cJust TNe
     transform "<"  = cJust TLt

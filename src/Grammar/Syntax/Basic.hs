@@ -22,7 +22,7 @@ ptSingleMark :: Char -> PLex Token
 ptSingleMark c = ptToken <=> (== TSingleMark c)
 
 ptTypeInt :: PLex Token
-ptTypeInt = ptToken <=> (==TInt)
+ptTypeInt = ptToken <=> (== TInt)
 
 ptVariable :: PLex Token
 ptVariable = ptToken <=> isIdentifier

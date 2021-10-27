@@ -6,42 +6,50 @@ import           Parser.Basic
 import           Parser.Conbinators
 
 data Expression
-    = ExpJst Term
-    | ExpAdd Term Term
-    | ExpSub Term Term
-
-data Term
-    = TermJst Factor
-    | TermMul Factor Factor
-    | TermDiv Factor Factor
-    | TermMod Factor Factor
+    = ExpJst Factor
+    | ExpAdd Expression Expression
+    | ExpSub Expression Expression
 
 data Factor
-    = FacNum {intValue :: String}
-    | FacVar {varName  :: String}
+    = FacJst Term
+    | FacMul Factor Factor
+    | FacDiv Factor Factor
+    | FacMod Factor Factor
+
+data Term
+    = TermNum {intValue :: String}
+    | TermVar {varName  :: String}
+    | TermExp Expression
 
 ptExpression :: PLex Expression
-ptExpression = undefined
-
-ptTerm :: PLex Term
-ptTerm =
-        ptFactor <+> ptOp2 <+> ptFactor >>> buildOp
-    <|> ptFactor >>> TermJst
+ptExpression = (ptFactor >>> ExpJst) <+> cIter (ptOp1 <+> (ptFactor >>> ExpJst))
+        >>> uncurry (foldl step) where
+            step t1 (opToken, t2) = buildOp opToken t1 t2
 
 ptFactor :: PLex Factor
-ptFactor =
-        ptVariable    >>> (\(TIdentifier  value) -> FacVar value)
-    <|> ptIntConstant >>> (\(TIntConstant value) -> FacNum value)
+ptFactor = (ptTerm >>> FacJst) <+> cIter (ptOp2 <+> (ptTerm >>> FacJst))
+        >>> uncurry (foldl step) where
+            step t1 (opToken, t2) = buildOp opToken t1 t2
 
-class BiOperator a b where
-    buildOp :: Transform ((a, Token), a) b
+ptTerm :: PLex Term
+ptTerm = ptIntConstant >>> (\(TIntConstant idName) -> TermNum idName)
+     <|> ptVariable >>> (\(TIdentifier intStr) -> TermVar intStr)
+     <|> cEncloseEx (ptSingleMark '(') (ptSingleMark ')') ptExpression
+        >>> TermExp
 
-instance BiOperator Factor Term where
-    buildOp = \((f1, op), f2) -> build op f1 f2 where
-        build TMul = TermMul
-        build TDiv = TermDiv
-        build TMod = TermMod
-        build _    = undefined
+class BiOperator a where
+    buildOp :: Token -> (a -> a -> a)
+
+instance BiOperator Factor where
+    buildOp TMul = FacMul
+    buildOp TDiv = FacDiv
+    buildOp TMod = FacMod
+    buildOp _    = undefined
+
+instance BiOperator Expression where
+    buildOp TAdd = ExpAdd
+    buildOp TSub = ExpSub
+    buildOp _    = undefined
 
 ptOp2 :: PLex Token
 ptOp2 = ptToken <=> (`elem` [TMul, TDiv, TMod])
@@ -55,12 +63,13 @@ instance Show Expression where
     show (ExpAdd t1 t2) = "<" ++ show t1 ++ "+" ++ show t2 ++ ">"
     show (ExpSub t1 t2) = "<" ++ show t1 ++ "-" ++ show t2 ++ ">"
 
-instance Show Term where
-    show (TermJst f)     = show f
-    show (TermMul f1 f2) = "<" ++ show f1 ++ "*" ++ show f2 ++ ">"
-    show (TermDiv f1 f2) = "<" ++ show f1 ++ "/" ++ show f2 ++ ">"
-    show (TermMod f1 f2) = "<" ++ show f1 ++ "%" ++ show f2 ++ ">"
-
 instance Show Factor where
-    show (FacNum intVal) = "<Num:" ++ intVal ++ ">"
-    show (FacVar idName) = "<Var:" ++ idName ++ ">"
+    show (FacJst f)     = show f
+    show (FacMul f1 f2) = "<" ++ show f1 ++ "*" ++ show f2 ++ ">"
+    show (FacDiv f1 f2) = "<" ++ show f1 ++ "/" ++ show f2 ++ ">"
+    show (FacMod f1 f2) = "<" ++ show f1 ++ "%" ++ show f2 ++ ">"
+
+instance Show Term where
+    show (TermNum intVal) = "<N:" ++ intVal ++ ">"
+    show (TermVar idName) = "<V:" ++ idName ++ ">"
+    show (TermExp exp)    = show exp

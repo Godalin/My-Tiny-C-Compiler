@@ -30,6 +30,7 @@ library
       Grammar.Lexical.Printer
       Grammar.Syntax.Basic
       Grammar.Syntax.Expression
+      Grammar.Syntax.Printer
       Grammar.Syntax.Syntax
       Parser.Basic
       Parser.Conbinators
