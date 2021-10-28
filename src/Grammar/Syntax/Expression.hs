@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 module Grammar.Syntax.Expression where
 import           Grammar.Lexical.Basic
 import           Grammar.Syntax.Basic
@@ -9,21 +10,26 @@ data Expression
     = ExpJst Factor
     | ExpAdd Expression Expression
     | ExpSub Expression Expression
+    -- deriving Show
 
 data Factor
     = FacJst Term
     | FacMul Factor Factor
     | FacDiv Factor Factor
     | FacMod Factor Factor
+    -- deriving Show
 
 data Term
     = TermNum {intValue :: String}
     | TermVar {varName  :: String}
     | TermExp Expression
+    -- deriving Show
 
 ptExpression :: PLex Expression
-ptExpression = (ptFactor >>> ExpJst) <+> cIter (ptOp1 <+> (ptFactor >>> ExpJst))
+ptExpression = (ptFactor >>> formExp) <+> cIter (ptOp1 <+> (ptFactor >>> formExp))
         >>> uncurry (foldl step) where
+            formExp (FacJst (TermExp e)) = e
+            formExp e                    = ExpJst e
             step t1 (opToken, t2) = buildOp opToken t1 t2
 
 ptFactor :: PLex Factor
@@ -44,12 +50,10 @@ instance BiOperator Factor where
     buildOp TMul = FacMul
     buildOp TDiv = FacDiv
     buildOp TMod = FacMod
-    buildOp _    = undefined
 
 instance BiOperator Expression where
     buildOp TAdd = ExpAdd
     buildOp TSub = ExpSub
-    buildOp _    = undefined
 
 ptOp2 :: PLex Token
 ptOp2 = ptToken <=> (`elem` [TMul, TDiv, TMod])
@@ -72,4 +76,4 @@ instance Show Factor where
 instance Show Term where
     show (TermNum intVal) = "<N:" ++ intVal ++ ">"
     show (TermVar idName) = "<V:" ++ idName ++ ">"
-    show (TermExp exp)    = show exp
+    show (TermExp exp)    = "<E:" ++ show exp ++ ">" -- This will never be used
