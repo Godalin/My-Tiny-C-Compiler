@@ -6,10 +6,20 @@ import           Parser.Conbinators
 
 type PLex a = Parser Token a
 
-newtype Var = Var {varName :: String}
 
+newtype Var = Var {varName :: String}
 instance Show Var where
-    show a = "<V:" ++ varName a ++ ">"
+    show v = "<V:" ++ varName v ++ ">"
+
+
+newtype Fun = Fun {funName :: String}
+instance Show Fun where
+    show f = "<$" ++ funName f ++ ">"
+
+data ReturnType = RtInt | RtVoid
+instance Show ReturnType where
+    show RtInt  = "<Rt.I>"
+    show RtVoid = "<Rt.V>"
 
 ptToken :: PLex Token
 ptToken = bParser
@@ -20,12 +30,24 @@ ptSingleMark c = ptToken <=> (== TSingleMark c)
 ptTypeInt :: PLex Token
 ptTypeInt = ptToken <=> (== TInt)
 
+ptTypeVoid :: PLex Token
+ptTypeVoid = ptToken <=> (== TVoid)
+
 ptVariable :: PLex Var
-ptVariable = ptToken <=> isIdentifier >>> (\(TIdentifier name) -> Var name)
-    where isIdentifier (TIdentifier _) = True
-          isIdentifier _               = False
+ptVariable = ptToken <=> isIdentifier
+            >>> (\(TIdentifier name) -> Var name)
+
+ptFunction :: PLex Fun
+ptFunction = ptToken <=> isIdentifier
+            >>> (\(TIdentifier name) -> Fun name)
 
 ptIntConstant :: PLex Token
 ptIntConstant = ptToken <=> isNumber
-    where isNumber (TIntConstant _) = True
-          isNumber _                = False
+
+isIdentifier :: Token -> Bool
+isIdentifier (TIdentifier _) = True
+isIdentifier _               = False
+
+isNumber :: Token -> Bool
+isNumber (TIntConstant _) = True
+isNumber _                = False
