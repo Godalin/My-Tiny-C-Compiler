@@ -1,19 +1,15 @@
 module Grammar.Syntax.Basic where
 
 import           Grammar.Lexical.Basic
-import           Grammar.Lexical.Printer
 import           Parser.Basic
 import           Parser.Conbinators
 
 type PLex a = Parser Token a
 
-data Statement
-    = SAssignment Token Token
-    | SIfStatement
-    | SWhileStatement
-    | SFunctionCall
-    | SDeclaration [Token]
-    deriving Show
+newtype Var = Var {varName :: String}
+
+instance Show Var where
+    show a = "<V:" ++ varName a ++ ">"
 
 ptToken :: PLex Token
 ptToken = bParser
@@ -24,8 +20,8 @@ ptSingleMark c = ptToken <=> (== TSingleMark c)
 ptTypeInt :: PLex Token
 ptTypeInt = ptToken <=> (== TInt)
 
-ptVariable :: PLex Token
-ptVariable = ptToken <=> isIdentifier
+ptVariable :: PLex Var
+ptVariable = ptToken <=> isIdentifier >>> (\(TIdentifier name) -> Var name)
     where isIdentifier (TIdentifier _) = True
           isIdentifier _               = False
 

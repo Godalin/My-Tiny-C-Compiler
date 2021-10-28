@@ -1,6 +1,11 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
-module Grammar.Syntax.Expression where
+
+
+module Grammar.Syntax.Expression
+    ( ptExpression
+    , Expression
+    ) where
 import           Grammar.Lexical.Basic
 import           Grammar.Syntax.Basic
 import           Parser.Basic
@@ -39,7 +44,7 @@ ptFactor = (ptTerm >>> FacJst) <+> cIter (ptOp2 <+> (ptTerm >>> FacJst))
 
 ptTerm :: PLex Term
 ptTerm = ptIntConstant >>> (\(TIntConstant idName) -> TermNum idName)
-     <|> ptVariable >>> (\(TIdentifier intStr) -> TermVar intStr)
+     <|> ptVariable  >>> (\(Var intStr) -> TermVar intStr)
      <|> cEncloseEx (ptSingleMark '(') (ptSingleMark ')') ptExpression
         >>> TermExp
 

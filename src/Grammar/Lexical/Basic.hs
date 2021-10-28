@@ -1,8 +1,6 @@
 module Grammar.Lexical.Basic where
 
 import           Parser.Basic
-import           Parser.Conbinators
-import           Parser.Parsers
 
 type TParser = PSource Token
 
