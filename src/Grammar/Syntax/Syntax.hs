@@ -20,13 +20,20 @@ ptStatement = ptAssignment
             <|> ptWhileStatement
             <|> ptFunctionCall
 
--- TODO useless paramater receiving
--- TODO useless when there is no variable declaration
+
 ptFunDefinition :: PLex Statement
-ptFunDefinition = (ptTypeInt >>> const RtInt <|> ptTypeVoid >>> const RtVoid )
+ptFunDefinition =
+                (ptTypeInt >>> const RtInt <|> ptTypeVoid >>> const RtVoid )
             <+> ptFunction
-            <+> mParenthesis (cIter ptVariable)
-            <+> mBlock (ptVarDeclaration <+> cIter ptVarDeclaration >>> uncurry (:))
+            <+> mParenthesis ((
+                    ptTypeInt <-+> ptVariable
+                <+> cIter (ptSingleMark ',' <-+> ptTypeInt <-+> ptVariable))
+                >>> uncurry (:)
+                <|> cJust [])
+            <+> mBlock (
+                    (ptVarDeclaration <|> cJust (SVarDeclaration []))
+                <+> cIter ptStatement
+                >>> uncurry (:))
             >>> (\(((rtType, fName), vars), body) -> SFunDefinition fName rtType vars body)
 
 ptVarDeclaration :: PLex Statement
