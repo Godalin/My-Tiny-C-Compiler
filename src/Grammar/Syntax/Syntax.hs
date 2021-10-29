@@ -1,4 +1,4 @@
-module Grammar.Syntax.Syntax where
+module Grammar.Syntax.Syntax(genProgram) where
 
 import           Grammar.Lexical.Basic
 import           Grammar.Syntax.Basic
@@ -14,12 +14,19 @@ data Statement
     | SVarDeclaration   [Var]
     deriving Show
 
+genProgram :: [Token] -> [Statement]
+genProgram tokenStream = case ptProgram tokenStream of
+    Just (ss, []) -> ss
+    _             -> error "Wrong Program"
+
+ptProgram :: PLex [Statement]
+ptProgram = cIter ptFunDefinition
+
 ptStatement :: PLex Statement
 ptStatement = ptAssignment
             <|> ptIfStatement
             <|> ptWhileStatement
             <|> ptFunctionCall
-
 
 ptFunDefinition :: PLex Statement
 ptFunDefinition =
