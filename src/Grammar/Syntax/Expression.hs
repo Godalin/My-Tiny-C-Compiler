@@ -1,139 +1,100 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -Wno-incomplete-patterns #-}
 
 
-module Grammar.Syntax.Expression
-    -- ( ptExpression
-    -- , Expression
-    -- ) where
-        where
+module Grammar.Syntax.Expression where
 import           Grammar.Lexical.Basic
 import           Grammar.Syntax.Basic
 import           Parser.Conbinators
 
-
-{-
-* simple maths expressions
-* <Expression> ::= <Expression> ([+-] <Expression>)*
-* <Factor>     ::= <Term>       ([*/] <Term>)*
-* <Term>       ::= <Num> | <Var> | <Expression>
--}
-
-class Operator2x a b where
-    build2Op :: Token -> (a -> a -> b)
-
-class Operator1x a b where
-    build1Op :: Token -> (a -> b)
-
 data Expression
-    = ExpJst Factor
-    | ExpAdd Expression Expression
-    | ExpSub Expression Expression
-    -- deriving Show
+    = ENum {intValue :: String}
+    | EVar {varName  :: String}
 
-data Factor
-    = FacJst Term
-    | FacMul Factor Factor
-    | FacDiv Factor Factor
-    | FacMod Factor Factor
-    -- deriving Show
+    | ENeg Expression
+    | Expression `EAdd` Expression
+    | Expression `ESub` Expression
 
-data Term
-    = TermNum {intValue :: String}
-    | TermVar {varName  :: String}
-    | TermExp Expression
-    -- deriving Show
+    | Expression `EMul` Expression
+    | Expression `EDiv` Expression
+    | Expression `EMod` Expression
 
-ptExpression :: PLex Expression
-ptExpression = (ptFactor >>> formExp) <+> cIter (ptOp1 <+> (ptFactor >>> formExp))
-        >>> uncurry (foldl step) where
-            formExp (FacJst (TermExp e)) = e
-            formExp e                    = ExpJst e
-            step t1 (opToken, t2) = build2Op opToken t1 t2
+    | ENot Expression
+    | Expression `EAnd` Expression
+    | Expression `EOr`  Expression
 
-ptFactor :: PLex Factor
-ptFactor = (ptTerm >>> FacJst) <+> cIter (ptOp2 <+> (ptTerm >>> FacJst))
-        >>> uncurry (foldl step) where
-            step t1 (opToken, t2) = build2Op opToken t1 t2
-
-ptTerm :: PLex Term
-ptTerm = ptIntConstant >>> (\(TIntConstant idName) -> TermNum idName)
-     <|> ptVariable  >>> (\(Var intStr) -> TermVar intStr)
-     <|> cEncloseEx (ptSingleMark '(') (ptSingleMark ')') ptExpression
-        >>> TermExp
-
-
-instance Operator2x Factor Factor where
-    build2Op TMul = FacMul
-    build2Op TDiv = FacDiv
-    build2Op TMod = FacMod
-
-instance Operator2x Expression Expression where
-    build2Op TAdd = ExpAdd
-    build2Op TSub = ExpSub
-
-ptOp2 :: PLex Token
-ptOp2 = ptToken <=> (`elem` [TMul, TDiv, TMod])
-
-ptOp1 :: PLex Token
-ptOp1 = ptToken <=> (`elem` [TAdd, TSub])
-
+    | Expression `EEq`  Expression
+    | Expression `ENe`  Expression
+    | Expression `EGt`  Expression
+    | Expression `ELt`  Expression
+    | Expression `EGe`  Expression
+    | Expression `ELe`  Expression
 
 instance Show Expression where
-    show (ExpJst t)     = show t
-    show (ExpAdd t1 t2) = "<" ++ show t1 ++ "+" ++ show t2 ++ ">"
-    show (ExpSub t1 t2) = "<" ++ show t1 ++ "-" ++ show t2 ++ ">"
-
-instance Show Factor where
-    show (FacJst f)     = show f
-    show (FacMul f1 f2) = "<" ++ show f1 ++ "*" ++ show f2 ++ ">"
-    show (FacDiv f1 f2) = "<" ++ show f1 ++ "/" ++ show f2 ++ ">"
-    show (FacMod f1 f2) = "<" ++ show f1 ++ "%" ++ show f2 ++ ">"
-
-instance Show Term where
-    show (TermNum intVal) = "<N:" ++ intVal   ++ ">"
-    show (TermVar idName) = "<V:" ++ idName   ++ ">"
-    show (TermExp exp)    = "<E:" ++ show exp ++ ">" -- This will never be used
+    show (ENum intVal) = "<N:" ++ intVal ++ ">"
+    show (EVar idName) = "<V:" ++ idName ++ ">"
+    show (ENeg e)      = "<- " ++ show e ++ ">"
+    show (EAdd t1 t2)  = "<" ++ show t1 ++ " + " ++ show t2 ++ ">"
+    show (ESub t1 t2)  = "<" ++ show t1 ++ " - " ++ show t2 ++ ">"
+    show (EMul f1 f2)  = "<" ++ show f1 ++ " * " ++ show f2 ++ ">"
+    show (EDiv f1 f2)  = "<" ++ show f1 ++ " / " ++ show f2 ++ ">"
+    show (EMod f1 f2)  = "<" ++ show f1 ++ " % " ++ show f2 ++ ">"
 
 
+ptExpression :: PLex Expression
+ptExpression = undefined
 
-data BExpression
-    = BJst Expression
-    | BNot BExpression
-    | BAnd BExpression BExpression
-    | BOr  BExpression BExpression
-    deriving Show
 
-data BComparison
-    = Expression `BCEQ` Expression
-    | Expression `BCNE` Expression
-    | Expression `BCGT` Expression
-    | Expression `BCLT` Expression
-    | Expression `BCGE` Expression
-    | Expression `BCLE` Expression
-    deriving Show
+ptMathExpression :: PLex Expression
+ptMathExpression =
+        (ptOpNeg <-+> ptFactor >>> ENeg
+    <|> ptFactor)
+    <+> cIter (ptOpAdds <+> ptFactor)
+    >>> uncurry (foldl step) where
+        step t1 (opToken, t2) = buildBiOp opToken t1 t2
 
-instance Operator2x BExpression BExpression where
-    build2Op TAnd = BAnd
-    build2Op TOr  = BOr
+ptFactor :: PLex Expression
+ptFactor =
+        ptTerm <+> cIter (ptOpMuls <+> ptTerm)
+    >>> uncurry (foldl step) where
+        step t1 (opToken, t2) = buildBiOp opToken t1 t2
 
-ptOpBool2 :: PLex Token
-ptOpBool2 = ptToken <=> (`elem` [TAnd, TOr])
+ptTerm :: PLex Expression
+ptTerm =
+        ptIntConstant >>> (\(TIntConstant idName) -> ENum idName)
+    <|> ptVariable    >>> (\(Var intStr)          -> EVar intStr)
+    <|> cEncloseEx (ptSingleMark '(') (ptSingleMark ')') ptMathExpression
 
-ptBNot :: PLex Token
-ptBNot = ptToken <=> (== TNot)
 
-instance Operator2x Expression BComparison where
-    build2Op TEq = BCEQ
-    build2Op TNe = BCNE
-    build2Op TGt = BCGT
-    build2Op TLt = BCLT
-    build2Op TGe = BCGE
-    build2Op TLe = BCLE
+buildBiOp :: Token -> (Expression -> Expression -> Expression)
+buildBiOp t = case t of
+    TAdd -> EAdd
+    TSub -> ESub
 
-ptOpComparison :: PLex Token
-ptOpComparison = ptToken <=> (`elem` [TEq, TNe, TGt, TLt, TGe, TLe])
+    TMul -> EMul
+    TDiv -> EDiv
+    TMod -> EMod
 
-ptComparison :: PLex BComparison
-ptComparison = ptExpression <+> ptOpComparison <+> ptExpression
-                >>> (\((l, op), r) -> build2Op op l r)
+    TAnd -> EAnd
+    TOr  -> EOr
+
+    TEq  -> EEq
+    TNe  -> ENe
+    TGt  -> EGt
+    TLt  -> ELt
+    TGe  -> EGe
+    TLe  -> ELe
+
+buildUnOp :: Token -> (Expression -> Expression)
+buildUnOp t = case t of
+    TSub -> ENeg
+    TNot -> ENot
+
+
+ptOpMuls :: PLex Token
+ptOpMuls = ptToken <=> (`elem` [TMul, TDiv, TMod])
+
+ptOpAdds :: PLex Token
+ptOpAdds = ptToken <=> (`elem` [TAdd, TSub])
+
+ptOpNeg :: PLex Token
+ptOpNeg = ptToken <=> (== TSub)
