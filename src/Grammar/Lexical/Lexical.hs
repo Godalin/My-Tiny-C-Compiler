@@ -67,22 +67,29 @@ pKeyWord = mRmSpace pLetters +> transform where
     transform _          = const Nothing
 
 pOperator :: TParser
-pOperator = mRmSpace pPunctuations +> transform where
-    transform "+"  = cJust TAdd
-    transform "-"  = cJust TSub
-    transform "*"  = cJust TMul
-    transform "/"  = cJust TDiv
-    transform "%"  = cJust TMod
+pOperator = pOperatorMulti <|> pOperatorSing
+
+pOperatorMulti :: TParser
+pOperatorMulti = mRmSpace pPunctuations +> transform where
     transform "==" = cJust TEq
     transform "!=" = cJust TNe
-    transform "<"  = cJust TLt
-    transform ">"  = cJust TGt
     transform "<=" = cJust TLe
     transform ">=" = cJust TGe
     transform "&&" = cJust TAnd
     transform "||" = cJust TOr
-    transform "!"  = cJust TNot
     transform _    = const Nothing
+
+pOperatorSing ::TParser
+pOperatorSing = mRmSpace pPunctuation +> transform where
+    transform '+' = cJust TAdd
+    transform '-' = cJust TSub
+    transform '*' = cJust TMul
+    transform '/' = cJust TDiv
+    transform '%' = cJust TMod
+    transform '<' = cJust TLt
+    transform '>' = cJust TGt
+    transform '!' = cJust TNot
+    transform _   = const Nothing
 
 pSinglePunc :: TParser
 pSinglePunc = mRmSpace pChar >>> TSingleMark
